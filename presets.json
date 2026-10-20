@@ -1,0 +1,5 @@
+[
+  { "id": "host",   "preset": "Host",    "name": "Ken Krell",    "title": "Host | I Know That",           "label": "HOST" },
+  { "id": "cohost", "preset": "Co-host", "name": "Co-host name", "title": "Co-host | I Know That",        "label": "CO-HOST" },
+  { "id": "guest",  "preset": "Guest",   "name": "Mateo Zobel",  "title": "CTO | FranklinAlexander LLC",  "label": "Tech Maven" }
+]

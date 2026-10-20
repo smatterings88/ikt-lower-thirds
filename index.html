@@ -1,0 +1,313 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>I KNOW THAT! | Producer desk</title>
+<style>
+*{box-sizing:border-box}
+body{margin:0;background:#0b1020;color:#f6f7fc;font:16px Arial,sans-serif}
+main{max-width:1340px;margin:auto;padding:40px 24px}
+header{border-bottom:1px solid #ffffff25;padding-bottom:25px;margin-bottom:30px}
+.eyebrow{color:#d6ff46;font-weight:800;letter-spacing:3px;font-size:12px}
+h1{font-size:42px;margin:12px 0;letter-spacing:-2px}
+p{color:#b9c3d9;line-height:1.6}
+.grid{display:grid;grid-template-columns:1fr 580px;gap:50px}
+label{display:block;font-weight:700;margin:20px 0 8px}
+input,select,textarea{width:100%;padding:14px;border:1px solid #53617d;border-radius:8px;background:#171f33;color:#fff;font:inherit}
+textarea{min-height:4.5em;resize:vertical}
+button{border:0;border-radius:8px;padding:15px 20px;background:#d6ff46;color:#101728;font:700 16px Arial;cursor:pointer}
+.secondary{background:#2b3651;color:#fff}
+.actions{display:flex;flex-wrap:wrap;gap:8px;margin-top:22px}
+.preview{width:576px;height:324px;position:relative;overflow:hidden;border:1px solid #ffffff30;border-radius:12px;background:radial-gradient(ellipse at 50% 35%,#65597c,#283a51 45%,#101728 80%)}
+iframe{width:1920px;height:1080px;transform:scale(.3);transform-origin:top left;border:0;position:absolute;inset:0}
+.preview:after{content:"";position:absolute;inset:0 auto 0 34.18%;width:31.64%;border-left:1px dashed #ffffff80;border-right:1px dashed #ffffff80;pointer-events:none}
+.placeholder{position:absolute;top:72px;left:0;right:0;text-align:center;color:#ffffff50;font-size:13px;letter-spacing:2px}
+.note{font-size:13px}
+code{color:#d6ff46}
+#status:empty{display:none}
+@media(max-width:1100px){
+  .grid{grid-template-columns:1fr}
+  h1{font-size:34px}
+  .preview{margin:auto}
+}
+@media(max-width:620px){.preview{zoom:.75}}
+:focus-visible{outline:3px solid #a88aff;outline-offset:3px}
+</style>
+</head>
+<body>
+<main>
+  <header>
+    <div class="eyebrow">I KNOW THAT! / PRODUCER DESK</div>
+    <h1>Landscape show. Mobile-ready names.</h1>
+    <p>Pick a person, check the preview, then copy the overlay URL for OBS. Download a file if you need an offline backup.</p>
+  </header>
+  <div class="grid">
+    <section>
+      <label for="preset">Preset</label>
+      <select id="preset"></select>
+      <p class="note">Show presets come from <code>presets.json</code>. <strong>Save as new preset</strong> keeps a copy in this browser only.</p>
+
+      <label for="name">Name</label>
+      <input id="name" maxlength="60" autocomplete="off">
+      <label for="title">Title or description</label>
+      <input id="title" maxlength="90" autocomplete="off">
+      <label for="label">Small banner label</label>
+      <input id="label" maxlength="24" autocomplete="off">
+
+      <label for="bg">Background color</label>
+      <input id="bg" type="color" value="#081b3a" style="height:52px;padding:5px">
+      <p class="note">Selected color: <output id="colorValue" for="bg">#081b3a</output></p>
+
+      <label for="opacity">Background opacity: <output id="opacityValue" for="opacity">88%</output></label>
+      <input id="opacity" type="range" min="0" max="100" step="1" value="88" aria-describedby="opacityHelp" style="padding:0;accent-color:#ff007f">
+      <p class="note" id="opacityHelp">0% is transparent. 100% is solid. Text, logo, and the rainbow accent stay fully visible.</p>
+
+      <label for="bottom">Position</label>
+      <select id="bottom">
+        <option value="120">Lower center — 120 px from bottom</option>
+        <option value="200">Raised — 200 px from bottom</option>
+        <option value="430">Middle of screen</option>
+      </select>
+
+      <label for="entrance">Entrance</label>
+      <select id="entrance">
+        <option value="true">Slide and fade in</option>
+        <option value="false">Static</option>
+      </select>
+
+      <div class="actions">
+        <button id="copy" type="button">Copy URL</button>
+        <button class="secondary" id="download" type="button">Download overlay file</button>
+        <button class="secondary" id="replay" type="button">Replay</button>
+        <button class="secondary" id="save" type="button">Save as new preset</button>
+      </div>
+
+      <p class="note">URL mode is the one to use on the show. Paste the address into an OBS Browser Source at <strong>1920 × 1080</strong>, and tick <strong>Refresh browser when scene becomes active</strong>.</p>
+      <label for="query">Overlay URL</label>
+      <textarea id="query" readonly></textarea>
+      <p class="note">File name: <code id="filename">IKT-lower-third-guest.html</code>. The download has these settings baked in. In OBS tick <strong>Local file</strong> and do not add <code>?name=</code>.</p>
+      <p class="note">The preview background and dashed guides are for reference only. They are not part of the overlay. The band stays inside a centered 9:16 crop of the 1920 × 1080 frame.</p>
+      <p class="note" id="status" role="status"></p>
+    </section>
+    <aside>
+      <div class="preview">
+        <div class="placeholder">YOUR CAMERA GOES HERE</div>
+        <iframe id="preview" title="Landscape lower-third preview" sandbox="allow-scripts"></iframe>
+      </div>
+      <p class="note">1920 × 1080, preview at 30%. Dashed guides show the centered 9:16 crop.</p>
+    </aside>
+  </div>
+</main>
+<script>
+const STORAGE_KEY = 'ikt-lower-third-presets';
+const DEFAULTS = { bottom: '120', animate: 'true', bg: '#081b3a', opacity: '88' };
+
+let filePresets = [];
+let template = '';
+
+function setStatus(message) {
+  document.getElementById('status').textContent = message;
+}
+
+function savedPresets() {
+  try {
+    const parsed = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
+    return Array.isArray(parsed) ? parsed : [];
+  } catch {
+    return [];
+  }
+}
+
+function allPresets() {
+  const fileIds = new Set(filePresets.map((preset) => preset.id));
+  return filePresets.concat(savedPresets().filter((preset) => preset && !fileIds.has(preset.id)));
+}
+
+function renderPresetOptions(selectedId) {
+  const select = document.getElementById('preset');
+  const current = selectedId ?? select.value;
+  select.replaceChildren();
+
+  const show = document.createElement('optgroup');
+  show.label = 'Show presets';
+  for (const preset of filePresets) {
+    const option = document.createElement('option');
+    option.value = preset.id;
+    option.textContent = preset.preset || preset.name;
+    show.appendChild(option);
+  }
+  select.appendChild(show);
+
+  const local = savedPresets().filter((preset) => !filePresets.some((filePreset) => filePreset.id === preset.id));
+  if (local.length) {
+    const group = document.createElement('optgroup');
+    group.label = 'Saved in this browser';
+    for (const preset of local) {
+      const option = document.createElement('option');
+      option.value = preset.id;
+      option.textContent = preset.preset || preset.name;
+      group.appendChild(option);
+    }
+    select.appendChild(group);
+  }
+
+  if ([...select.options].some((option) => option.value === current)) select.value = current;
+}
+
+function applyPreset(id) {
+  const preset = allPresets().find((item) => item.id === id);
+  if (!preset) return;
+  document.getElementById('preset').value = id;
+  document.getElementById('name').value = preset.name || '';
+  document.getElementById('title').value = preset.title || '';
+  document.getElementById('label').value = preset.label || '';
+  const bottom = String(preset.bottom ?? DEFAULTS.bottom);
+  const bottomField = document.getElementById('bottom');
+  if ([...bottomField.options].some((option) => option.value === bottom)) bottomField.value = bottom;
+  document.getElementById('entrance').value = String(preset.animate ?? DEFAULTS.animate) === 'false' ? 'false' : 'true';
+  document.getElementById('bg').value = /^#[0-9a-f]{6}$/i.test(String(preset.bg || '')) ? preset.bg : DEFAULTS.bg;
+  document.getElementById('opacity').value = String(preset.opacity ?? DEFAULTS.opacity);
+  preview();
+}
+
+function config() {
+  return {
+    name: document.getElementById('name').value,
+    title: document.getElementById('title').value,
+    label: document.getElementById('label').value,
+    bottom: Number(document.getElementById('bottom').value),
+    animate: document.getElementById('entrance').value === 'true',
+    bg: document.getElementById('bg').value,
+    opacity: Number(document.getElementById('opacity').value),
+  };
+}
+
+function output() {
+  return template.replace(
+    /(<script id="config" type="application\/json">)[\s\S]*?(<\/script>)/,
+    (_, open, close) => open + JSON.stringify(config()).replace(/</g, '\\u003c') + close
+  );
+}
+
+function slug(name) {
+  const value = String(name || 'guest')
+    .toLowerCase()
+    .normalize('NFKD')
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-|-$/g, '');
+  return value || 'guest';
+}
+
+function fileName() {
+  return 'IKT-lower-third-' + slug(document.getElementById('name').value) + '.html';
+}
+
+function overlayUrl() {
+  const url = new URL('lower-third.html', location.href);
+  url.search = new URLSearchParams({
+    name: config().name,
+    title: config().title,
+    label: config().label,
+    bottom: String(config().bottom),
+    animate: String(config().animate),
+    bg: config().bg,
+    opacity: String(config().opacity),
+  }).toString();
+  return url.toString();
+}
+
+function preview(replay) {
+  document.getElementById('colorValue').textContent = document.getElementById('bg').value;
+  document.getElementById('opacityValue').textContent = document.getElementById('opacity').value + '%';
+  document.getElementById('query').value = template ? overlayUrl() : '';
+  document.getElementById('filename').textContent = fileName();
+  if (!template) return;
+  const frame = document.getElementById('preview');
+  const html = output();
+  if (replay) frame.srcdoc = '';
+  frame.srcdoc = html;
+}
+
+async function copyUrl() {
+  const url = overlayUrl();
+  document.getElementById('query').value = url;
+  try {
+    await navigator.clipboard.writeText(url);
+    setStatus('Copied the overlay URL. Paste it into an OBS Browser Source at 1920 × 1080.');
+  } catch {
+    document.getElementById('query').focus();
+    document.getElementById('query').select();
+    setStatus('Clipboard is blocked. Select the URL above and copy it.');
+  }
+}
+
+function downloadOverlay() {
+  const name = fileName();
+  const url = URL.createObjectURL(new Blob([output()], { type: 'text/html;charset=utf-8' }));
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = name;
+  link.click();
+  setTimeout(() => URL.revokeObjectURL(url), 2000);
+  setStatus('Downloaded ' + name + '. In OBS, tick Local file and select it. Do not add ?name= to that file.');
+}
+
+function savePreset() {
+  const current = config();
+  const label = current.name.trim() || 'Untitled';
+  const id = 'local-' + slug(label);
+  const entry = {
+    id,
+    preset: label,
+    name: current.name,
+    title: current.title,
+    label: current.label,
+    bottom: current.bottom,
+    animate: current.animate,
+    bg: current.bg,
+    opacity: current.opacity,
+  };
+  const next = savedPresets().filter((preset) => preset.id !== id);
+  next.push(entry);
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
+  renderPresetOptions(id);
+  setStatus('Saved “' + label + '” in this browser only. It is not written to presets.json.');
+}
+
+async function init() {
+  const [presetsResponse, overlayResponse] = await Promise.all([
+    fetch('presets.json', { cache: 'no-store' }),
+    fetch('lower-third.html', { cache: 'no-store' }),
+  ]);
+  if (!presetsResponse.ok || !overlayResponse.ok) {
+    throw new Error('Could not load presets.json or lower-third.html');
+  }
+  const presets = await presetsResponse.json();
+  if (!Array.isArray(presets)) throw new Error('presets.json must be a list');
+  filePresets = presets;
+  template = await overlayResponse.text();
+  renderPresetOptions(filePresets[0] && filePresets[0].id);
+  if (filePresets[0]) applyPreset(filePresets[0].id);
+  else preview();
+}
+
+let timer;
+for (const id of ['name', 'title', 'label', 'bottom', 'entrance', 'bg', 'opacity']) {
+  document.getElementById(id).addEventListener('input', () => {
+    clearTimeout(timer);
+    timer = setTimeout(() => preview(false), 180);
+  });
+}
+document.getElementById('preset').addEventListener('change', (event) => applyPreset(event.target.value));
+document.getElementById('copy').addEventListener('click', copyUrl);
+document.getElementById('download').addEventListener('click', downloadOverlay);
+document.getElementById('replay').addEventListener('click', () => preview(true));
+document.getElementById('save').addEventListener('click', savePreset);
+
+init().catch(() => {
+  setStatus('This desk needs a web server. From the project folder run: npx serve .');
+});
+</script>
+</body>
+</html>

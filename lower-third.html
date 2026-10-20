@@ -20,7 +20,8 @@ body{font-family:Arial,Helvetica,sans-serif;color:#fff}
 .ticker{display:none;height:34px;overflow:hidden;align-items:center;border-top:1px solid #ffffff18}
 .ticker.on{display:flex}
 .ticker-move{display:flex;width:max-content;animation:ticker linear infinite}
-.ticker-text{padding-right:120px;white-space:nowrap;font-size:16px;font-weight:700;letter-spacing:.4px;color:#f4f7ff}
+.ticker-gap{flex:none;width:1920px}
+.ticker-text{flex:none;white-space:nowrap;font-size:16px;font-weight:700;letter-spacing:.4px;line-height:34px;color:#f4f7ff}
 @keyframes ticker{from{transform:translateX(0)}to{transform:translateX(-50%)}}
 .footer{height:4px;background:linear-gradient(90deg,#ff007f,#ff8a00,#ffdf00,#00d474,#00baff,#753aff,#ff007f)}
 .enter-rise,.enter-fade,.enter-left,.enter-right,.enter-drop,.enter-pop,.enter-wipe,.enter-expand{animation-duration:.65s;animation-timing-function:cubic-bezier(.16,1,.3,1);animation-fill-mode:both}
@@ -43,8 +44,8 @@ body{font-family:Arial,Helvetica,sans-serif;color:#fff}
 @media(prefers-reduced-motion:reduce){
   .enter-rise,.enter-fade,.enter-left,.enter-right,.enter-drop,.enter-pop,.enter-wipe,.enter-expand{animation:none}
   .ticker-move{animation:none;width:100%;justify-content:center}
-  .ticker-text[aria-hidden="true"]{display:none}
-  .ticker-text{max-width:100%;overflow:hidden;text-overflow:ellipsis;padding-left:22px}
+  .ticker-gap,.ticker-text[aria-hidden="true"]{display:none}
+  .ticker-text{max-width:100%;overflow:hidden;text-overflow:ellipsis;padding:0 22px}
 }
 </style>
 </head>
@@ -66,7 +67,9 @@ body{font-family:Arial,Helvetica,sans-serif;color:#fff}
       </div>
       <div class="ticker">
         <div class="ticker-move">
+          <span class="ticker-gap" aria-hidden="true"></span>
           <span class="ticker-text"></span>
+          <span class="ticker-gap" aria-hidden="true"></span>
           <span class="ticker-text" aria-hidden="true"></span>
         </div>
       </div>
@@ -96,7 +99,10 @@ body{font-family:Arial,Helvetica,sans-serif;color:#fff}
     ticker.classList.add('on');
     ticker.querySelectorAll('.ticker-text').forEach((el) => { el.textContent = tickerMessage; });
     const move = ticker.querySelector('.ticker-move');
-    move.style.animationDuration = Math.max(12, (move.scrollWidth / 2) / 90) + 's';
+    const span = ticker.clientWidth || 1920;
+    ticker.querySelectorAll('.ticker-gap').forEach((el) => { el.style.width = span + 'px'; });
+    const travel = span + ticker.querySelector('.ticker-text').scrollWidth;
+    move.style.animationDuration = Math.max(8, travel / 110) + 's';
   }
   const b = Number(c.bottom);
   const lower = document.querySelector('.lower');

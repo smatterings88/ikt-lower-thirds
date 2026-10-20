@@ -54,6 +54,9 @@ code{color:#d6ff46}
       <input id="title" maxlength="90" autocomplete="off">
       <label for="label">Small banner label</label>
       <input id="label" maxlength="24" autocomplete="off">
+      <label for="ticker">Ticker message</label>
+      <input id="ticker" maxlength="220" autocomplete="off" placeholder="Leave blank to hide the ticker">
+      <p class="note">Runs along the bottom of the band, above the rainbow line. A phone crop still reads it as the words pass the center.</p>
 
       <label for="bg">Background color</label>
       <input id="bg" type="color" value="#081b3a" style="height:52px;padding:5px">
@@ -170,6 +173,7 @@ function applyPreset(id) {
   document.getElementById('name').value = preset.name || '';
   document.getElementById('title').value = preset.title || '';
   document.getElementById('label').value = preset.label || '';
+  document.getElementById('ticker').value = preset.ticker || '';
   const bottom = String(preset.bottom ?? DEFAULTS.bottom);
   const bottomField = document.getElementById('bottom');
   if ([...bottomField.options].some((option) => option.value === bottom)) bottomField.value = bottom;
@@ -191,6 +195,7 @@ function config() {
     name: document.getElementById('name').value,
     title: document.getElementById('title').value,
     label: document.getElementById('label').value,
+    ticker: document.getElementById('ticker').value.trim(),
     bottom: Number(document.getElementById('bottom').value),
     animate: entranceValue(document.getElementById('entrance').value),
     bg: document.getElementById('bg').value,
@@ -224,6 +229,7 @@ function overlayUrl() {
     name: config().name,
     title: config().title,
     label: config().label,
+    ticker: config().ticker,
     bottom: String(config().bottom),
     animate: String(config().animate),
     bg: config().bg,
@@ -278,6 +284,7 @@ function savePreset() {
     name: current.name,
     title: current.title,
     label: current.label,
+    ticker: current.ticker,
     bottom: current.bottom,
     animate: current.animate,
     bg: current.bg,
@@ -308,7 +315,7 @@ async function init() {
 }
 
 let timer;
-for (const id of ['name', 'title', 'label', 'bottom', 'entrance', 'bg', 'opacity']) {
+for (const id of ['name', 'title', 'label', 'ticker', 'bottom', 'entrance', 'bg', 'opacity']) {
   document.getElementById(id).addEventListener('input', () => {
     clearTimeout(timer);
     timer = setTimeout(() => preview(false), 180);

@@ -24,7 +24,7 @@ Make one Browser Source per person (Host, Co-host, Guest) and toggle them per sc
 
 **File mode (offline backup).** Click **Download overlay file**. The file is named after the person (`IKT-lower-third-ken-krell.html`) and has the settings baked in. In OBS tick **Local file** and select it. Don't add `?name=` to local files.
 
-URL parameters override the defaults inside `lower-third.html`: `name`, `title`, `label`, `bottom` (40–760 px), `animate` (`true`/`false`), `bg` (`#rrggbb`), `opacity` (0–100).
+URL parameters override the defaults inside `lower-third.html`: `name`, `title`, `label`, `bottom` (40–760 px), `animate` (`rise`, `fade`, `left`, `right`, `drop`, `pop`, `wipe`, `expand`, or `none`; `true` still means slide up), `bg` (`#rrggbb`), `opacity` (0–100).
 
 ## Changing presets
 

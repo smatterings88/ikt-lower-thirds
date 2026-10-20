@@ -72,8 +72,15 @@ code{color:#d6ff46}
 
       <label for="entrance">Entrance</label>
       <select id="entrance">
-        <option value="true">Slide and fade in</option>
-        <option value="false">Static</option>
+        <option value="rise">Slide up</option>
+        <option value="fade">Fade in</option>
+        <option value="left">From the left</option>
+        <option value="right">From the right</option>
+        <option value="drop">Drop in</option>
+        <option value="pop">Pop</option>
+        <option value="wipe">Wipe on</option>
+        <option value="expand">Expand from center</option>
+        <option value="none">Static</option>
       </select>
 
       <div class="actions">
@@ -101,7 +108,8 @@ code{color:#d6ff46}
 </main>
 <script>
 const STORAGE_KEY = 'ikt-lower-third-presets';
-const DEFAULTS = { bottom: '120', animate: 'true', bg: '#081b3a', opacity: '88' };
+const DEFAULTS = { bottom: '120', animate: 'rise', bg: '#081b3a', opacity: '88' };
+const ENTRANCES = ['rise', 'fade', 'left', 'right', 'drop', 'pop', 'wipe', 'expand', 'none'];
 
 let filePresets = [];
 let template = '';
@@ -165,10 +173,17 @@ function applyPreset(id) {
   const bottom = String(preset.bottom ?? DEFAULTS.bottom);
   const bottomField = document.getElementById('bottom');
   if ([...bottomField.options].some((option) => option.value === bottom)) bottomField.value = bottom;
-  document.getElementById('entrance').value = String(preset.animate ?? DEFAULTS.animate) === 'false' ? 'false' : 'true';
+  document.getElementById('entrance').value = entranceValue(preset.animate);
   document.getElementById('bg').value = /^#[0-9a-f]{6}$/i.test(String(preset.bg || '')) ? preset.bg : DEFAULTS.bg;
   document.getElementById('opacity').value = String(preset.opacity ?? DEFAULTS.opacity);
   preview();
+}
+
+function entranceValue(value) {
+  const raw = String(value ?? DEFAULTS.animate);
+  if (raw === 'true' || raw === '1') return 'rise';
+  if (raw === 'false' || raw === '0' || raw === 'static') return 'none';
+  return ENTRANCES.includes(raw) ? raw : DEFAULTS.animate;
 }
 
 function config() {
@@ -177,7 +192,7 @@ function config() {
     title: document.getElementById('title').value,
     label: document.getElementById('label').value,
     bottom: Number(document.getElementById('bottom').value),
-    animate: document.getElementById('entrance').value === 'true',
+    animate: entranceValue(document.getElementById('entrance').value),
     bg: document.getElementById('bg').value,
     opacity: Number(document.getElementById('opacity').value),
   };

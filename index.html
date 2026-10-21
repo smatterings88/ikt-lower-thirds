@@ -25,6 +25,10 @@ iframe{width:1920px;height:1080px;transform:scale(.3);transform-origin:top left;
 .placeholder{position:absolute;top:72px;left:0;right:0;text-align:center;color:#ffffff50;font-size:13px;letter-spacing:2px}
 .note{font-size:13px}
 code{color:#d6ff46}
+.tabs{display:flex;gap:8px;margin:0 0 26px}
+.tabs button[aria-selected="true"]{background:#d6ff46;color:#101728}
+label.check{display:flex;align-items:center;gap:10px}
+label.check input{width:auto}
 #status:empty{display:none}
 @media(max-width:1100px){
   .grid{grid-template-columns:1fr}
@@ -40,10 +44,15 @@ code{color:#d6ff46}
   <header>
     <div class="eyebrow">I KNOW THAT! / PRODUCER DESK</div>
     <h1>Landscape show. Mobile-ready names.</h1>
-    <p>Pick a person, check the preview, then copy the overlay URL for OBS. Download a file if you need an offline backup.</p>
+    <p>Pick a person, check the preview, then copy the overlay URL for OBS. Download a file if you need an offline backup. The Countdown tab builds the daily show-start overlay.</p>
   </header>
+  <div class="tabs" role="tablist">
+    <button id="tab-lower" type="button" role="tab" aria-selected="true" aria-controls="panel-lower">Lower third</button>
+    <button id="tab-count" class="secondary" type="button" role="tab" aria-selected="false" aria-controls="panel-count">Countdown</button>
+  </div>
   <div class="grid">
-    <section>
+    <div>
+    <section id="panel-lower" role="tabpanel">
       <label for="preset">Preset</label>
       <select id="preset"></select>
       <p class="note">Show presets come from <code>presets.json</code>. <strong>Save as new preset</strong> keeps a copy in this browser only.</p>
@@ -100,12 +109,42 @@ code{color:#d6ff46}
       <p class="note">The preview background and dashed guides are for reference only. They are not part of the overlay. The band stays inside a centered 9:16 crop of the 1920 × 1080 frame.</p>
       <p class="note" id="status" role="status"></p>
     </section>
+    <section id="panel-count" role="tabpanel" hidden>
+      <label for="showTime">Show time</label>
+      <input id="showTime" type="time" value="20:54">
+      <p class="note">Counted down in America/New_York. Daylight saving switches on its own, wherever this computer is.</p>
+
+      <label for="countLabel">Label</label>
+      <input id="countLabel" maxlength="80" autocomplete="off" value="I KNOW THAT! starts in">
+
+      <label for="liveWindow">Live window (seconds)</label>
+      <input id="liveWindow" type="number" min="0" max="3600" step="1" value="30">
+      <p class="note">How long “IT’S SHOWTIME!” stays up after zero. Then the overlay fades and stays clear until the next start is within 12 hours.</p>
+
+      <label for="countTz">Time zone</label>
+      <input id="countTz" autocomplete="off" value="America/New_York">
+
+      <label class="check" for="countSound"><input id="countSound" type="checkbox"> Play cue beeps</label>
+      <p class="note">Off by default. Leave it off on the show so the beeps do not go out through Crowdpurr.</p>
+
+      <div class="actions">
+        <button id="countCopy" type="button">Copy URL</button>
+        <button class="secondary" id="countDownload" type="button">Download countdown file</button>
+        <button class="secondary" id="countTest" type="button">Preview final 15 seconds</button>
+      </div>
+      <p class="note">Paste the URL into an OBS Browser Source at <strong>1920 × 1080</strong>. Leave <strong>Refresh browser when scene becomes active</strong> off so the cues do not restart, and leave <strong>Shutdown source when not visible</strong> off so the clock does not pause.</p>
+      <label for="countQuery">Countdown URL</label>
+      <textarea id="countQuery" readonly></textarea>
+      <p class="note">File name: <code id="countFilename">IKT-countdown.html</code>. The download has these settings baked in. In OBS tick <strong>Local file</strong>.</p>
+      <p class="note" id="countStatus" role="status"></p>
+    </section>
+    </div>
     <aside>
       <div class="preview">
         <div class="placeholder">YOUR CAMERA GOES HERE</div>
         <iframe id="preview" title="Landscape lower-third preview" sandbox="allow-scripts"></iframe>
       </div>
-      <p class="note">1920 × 1080, preview at 30%. Dashed guides show the centered 9:16 crop.</p>
+      <p class="note" id="previewNote">1920 × 1080, preview at 30%. Dashed guides show the centered 9:16 crop.</p>
     </aside>
   </div>
 </main>
@@ -116,9 +155,15 @@ const ENTRANCES = ['rise', 'fade', 'left', 'right', 'drop', 'pop', 'wipe', 'expa
 
 let filePresets = [];
 let template = '';
+let countdownTemplate = '';
+let countdownTest = null;
 
 function setStatus(message) {
   document.getElementById('status').textContent = message;
+}
+
+function setCountStatus(message) {
+  document.getElementById('countStatus').textContent = message;
 }
 
 function savedPresets() {
@@ -297,6 +342,94 @@ function savePreset() {
   setStatus('Saved “' + label + '” in this browser only. It is not written to presets.json.');
 }
 
+function showPanel(which) {
+  const lower = which === 'lower';
+  document.getElementById('panel-lower').hidden = !lower;
+  document.getElementById('panel-count').hidden = lower;
+  document.getElementById('tab-lower').setAttribute('aria-selected', String(lower));
+  document.getElementById('tab-count').setAttribute('aria-selected', String(!lower));
+  document.getElementById('tab-lower').classList.toggle('secondary', !lower);
+  document.getElementById('tab-count').classList.toggle('secondary', lower);
+  document.getElementById('preview').title = lower ? 'Landscape lower-third preview' : 'Countdown preview';
+  document.getElementById('previewNote').textContent = lower
+    ? '1920 × 1080, preview at 30%. Dashed guides show the centered 9:16 crop.'
+    : '1920 × 1080, preview at 30%. Dashed guides show the centered 9:16 crop. The live clock stays clear when the start is more than 12 hours away.';
+  if (lower) preview(false);
+  else countdownPreview(true);
+}
+
+function countdownValues(includeTest) {
+  const time = document.getElementById('showTime').value || '20:54';
+  const values = {
+    time: time.slice(0, 5),
+    tz: document.getElementById('countTz').value.trim() || 'America/New_York',
+    label: document.getElementById('countLabel').value,
+    live: Number(document.getElementById('liveWindow').value),
+    sound: document.getElementById('countSound').checked,
+  };
+  if (includeTest && countdownTest != null) values.test = countdownTest;
+  return values;
+}
+
+function countdownOutput(includeTest) {
+  return countdownTemplate.replace(
+    /(<script id="config" type="application\/json">)[\s\S]*?(<\/script>)/,
+    (_, open, close) => open + JSON.stringify(countdownValues(includeTest)).replace(/</g, '\\u003c') + close
+  );
+}
+
+function countdownUrl() {
+  const url = new URL('countdown.html', location.href);
+  const values = countdownValues(false);
+  url.search = new URLSearchParams({
+    time: values.time,
+    tz: values.tz,
+    label: values.label,
+    live: String(values.live),
+    sound: values.sound ? 'true' : 'false',
+  }).toString();
+  return url.toString();
+}
+
+function countdownPreview(restart) {
+  document.getElementById('countQuery').value = countdownUrl();
+  document.getElementById('countFilename').textContent = 'IKT-countdown.html';
+  if (!countdownTemplate || document.getElementById('panel-count').hidden) return;
+  const frame = document.getElementById('preview');
+  const html = countdownOutput(true);
+  if (restart) frame.srcdoc = '';
+  frame.srcdoc = html;
+}
+
+async function copyCountdownUrl() {
+  const url = countdownUrl();
+  document.getElementById('countQuery').value = url;
+  try {
+    await navigator.clipboard.writeText(url);
+    setCountStatus('Copied the countdown URL. In OBS, leave refresh and shutdown-when-hidden off.');
+  } catch {
+    document.getElementById('countQuery').focus();
+    document.getElementById('countQuery').select();
+    setCountStatus('Clipboard is blocked. Select the URL above and copy it.');
+  }
+}
+
+function downloadCountdown() {
+  const url = URL.createObjectURL(new Blob([countdownOutput(false)], { type: 'text/html;charset=utf-8' }));
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = 'IKT-countdown.html';
+  link.click();
+  setTimeout(() => URL.revokeObjectURL(url), 2000);
+  setCountStatus('Downloaded IKT-countdown.html. In OBS, tick Local file and select it.');
+}
+
+function toggleCountdownTest() {
+  countdownTest = countdownTest == null ? 15 : null;
+  document.getElementById('countTest').textContent = countdownTest == null ? 'Preview final 15 seconds' : 'Back to live clock';
+  countdownPreview(true);
+}
+
 async function init() {
   const [presetsResponse, overlayResponse] = await Promise.all([
     fetch('presets.json', { cache: 'no-store' }),
@@ -312,6 +445,14 @@ async function init() {
   renderPresetOptions(filePresets[0] && filePresets[0].id);
   if (filePresets[0]) applyPreset(filePresets[0].id);
   else preview();
+  try {
+    const countdownResponse = await fetch('countdown.html', { cache: 'no-store' });
+    if (!countdownResponse.ok) throw new Error('countdown');
+    countdownTemplate = await countdownResponse.text();
+    countdownPreview(false);
+  } catch {
+    setCountStatus('Could not load countdown.html.');
+  }
 }
 
 let timer;
@@ -326,6 +467,20 @@ document.getElementById('copy').addEventListener('click', copyUrl);
 document.getElementById('download').addEventListener('click', downloadOverlay);
 document.getElementById('replay').addEventListener('click', () => preview(true));
 document.getElementById('save').addEventListener('click', savePreset);
+document.getElementById('tab-lower').addEventListener('click', () => showPanel('lower'));
+document.getElementById('tab-count').addEventListener('click', () => showPanel('count'));
+let countTimer;
+for (const id of ['showTime', 'countLabel', 'liveWindow', 'countTz', 'countSound']) {
+  document.getElementById(id).addEventListener('input', () => {
+    countdownTest = null;
+    document.getElementById('countTest').textContent = 'Preview final 15 seconds';
+    clearTimeout(countTimer);
+    countTimer = setTimeout(() => countdownPreview(false), 180);
+  });
+}
+document.getElementById('countCopy').addEventListener('click', copyCountdownUrl);
+document.getElementById('countDownload').addEventListener('click', downloadCountdown);
+document.getElementById('countTest').addEventListener('click', toggleCountdownTest);
 
 init().catch(() => {
   setStatus('This desk needs a web server. From the project folder run: npx serve .');

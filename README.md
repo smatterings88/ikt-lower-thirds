@@ -39,9 +39,9 @@ Open the **Countdown** tab on the desk. The show starts daily at **8:54 PM US Ea
 
 **File mode.** Download `IKT-countdown.html`. The settings are baked in. In OBS tick **Local file**.
 
-The clock stays up however many hours remain. After zero it reads **Let's Play!** for the live window, then the countdown for the next start comes back.
+The clock stays up however many hours remain. At zero the timer comes off, and after the live window the countdown for the next start comes back.
 
-URL parameters override the defaults inside `countdown.html`: `time` (24-hour `HH:MM`, default `20:54`), `tz` (IANA zone, default `America/New_York`), `label`, `live` (seconds to hold “Let's Play!”, default 30), `sound` (`true` plays short beeps at the cues and the last 10 seconds; default off), `test` (seconds remaining from page load, for rehearsal — `?test=605` for the 10-minute cue, `?test=15` for the ending). Test mode shows a **TEST** tag and is not part of the copied show URL.
+URL parameters override the defaults inside `countdown.html`: `time` (24-hour `HH:MM`, default `20:54`), `tz` (IANA zone, default `America/New_York`), `live` (seconds the timer stays off after zero, default 30), `sound` (`true` plays short beeps at the cues and the last 10 seconds; default off), `test` (seconds remaining from page load, for rehearsal — `?test=605` for the 10-minute cue, `?test=15` for the ending). Test mode shows a **TEST** tag and is not part of the copied show URL.
 
 `node check-countdown-dst.mjs` prints the 8:54 PM Eastern instant around the 2026 daylight-saving changes and checks each one.
 

@@ -114,12 +114,9 @@ label.check input{width:auto}
       <input id="showTime" type="time" value="20:54">
       <p class="note">Counted down in America/New_York. Daylight saving switches on its own, wherever this computer is.</p>
 
-      <label for="countLabel">Label</label>
-      <input id="countLabel" maxlength="80" autocomplete="off" value="I KNOW THAT! starts in">
-
       <label for="liveWindow">Live window (seconds)</label>
       <input id="liveWindow" type="number" min="0" max="3600" step="1" value="30">
-      <p class="note">How long “Let's Play!” stays up after zero. Then the countdown for the next start comes back.</p>
+      <p class="note">How long the countdown stays off after zero. Then the clock for the next start comes back.</p>
 
       <label for="countTz">Time zone</label>
       <input id="countTz" autocomplete="off" value="America/New_York">
@@ -363,7 +360,6 @@ function countdownValues(includeTest) {
   const values = {
     time: time.slice(0, 5),
     tz: document.getElementById('countTz').value.trim() || 'America/New_York',
-    label: document.getElementById('countLabel').value,
     live: Number(document.getElementById('liveWindow').value),
     sound: document.getElementById('countSound').checked,
   };
@@ -384,7 +380,6 @@ function countdownUrl() {
   url.search = new URLSearchParams({
     time: values.time,
     tz: values.tz,
-    label: values.label,
     live: String(values.live),
     sound: values.sound ? 'true' : 'false',
   }).toString();
@@ -470,7 +465,7 @@ document.getElementById('save').addEventListener('click', savePreset);
 document.getElementById('tab-lower').addEventListener('click', () => showPanel('lower'));
 document.getElementById('tab-count').addEventListener('click', () => showPanel('count'));
 let countTimer;
-for (const id of ['showTime', 'countLabel', 'liveWindow', 'countTz', 'countSound']) {
+for (const id of ['showTime', 'liveWindow', 'countTz', 'countSound']) {
   document.getElementById(id).addEventListener('input', () => {
     countdownTest = null;
     document.getElementById('countTest').textContent = 'Preview final 15 seconds';

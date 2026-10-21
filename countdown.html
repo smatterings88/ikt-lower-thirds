@@ -88,7 +88,7 @@ body{font-family:Arial,Helvetica,sans-serif;color:#fff}
     </div>
     <div class="showtime" hidden>
       <div class="showtime-plate">
-        <div class="showtime-text">IT'S SHOWTIME!</div>
+        <div class="showtime-text">Let's Play!</div>
         <div class="footer"></div>
       </div>
     </div>
@@ -191,7 +191,6 @@ body{font-family:Arial,Helvetica,sans-serif;color:#fff}
     return n;
   }
   function phaseFor(ms, liveMs) {
-    if (ms > 12 * 3600 * 1000) return 'hidden';
     if (ms > 600000) return 'calm';
     if (ms > 300000) return 'ten';
     if (ms > 120000) return 'five';

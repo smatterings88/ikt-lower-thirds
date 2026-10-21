@@ -119,7 +119,7 @@ label.check input{width:auto}
 
       <label for="liveWindow">Live window (seconds)</label>
       <input id="liveWindow" type="number" min="0" max="3600" step="1" value="30">
-      <p class="note">How long “IT’S SHOWTIME!” stays up after zero. Then the overlay fades and stays clear until the next start is within 12 hours.</p>
+      <p class="note">How long “Let's Play!” stays up after zero. Then the countdown for the next start comes back.</p>
 
       <label for="countTz">Time zone</label>
       <input id="countTz" autocomplete="off" value="America/New_York">
@@ -353,7 +353,7 @@ function showPanel(which) {
   document.getElementById('preview').title = lower ? 'Landscape lower-third preview' : 'Countdown preview';
   document.getElementById('previewNote').textContent = lower
     ? '1920 × 1080, preview at 30%. Dashed guides show the centered 9:16 crop.'
-    : '1920 × 1080, preview at 30%. Dashed guides show the centered 9:16 crop. The live clock stays clear when the start is more than 12 hours away.';
+    : '1920 × 1080, preview at 30%. Dashed guides show the centered 9:16 crop. The clock stays up however far away the start is.';
   if (lower) preview(false);
   else countdownPreview(true);
 }
